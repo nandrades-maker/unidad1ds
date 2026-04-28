@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>El Campesino Cafetero | Juego Didáctico</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+
+:root {
+  --tierra:    #8B6347;
+  --tierra-dk: #5C3D2E;
+  --hoja:      #4A7C59;
+  --hoja-lt:   #6FAE7E;
+  --crema:     #F5ECD7;
+  --crema-dk:  #E8D5B0;
+  --cafe:      #6B3F2A;
+  --cafe-lt:   #A0674A;
+  --oro:       #C89A4E;
+  --oro-lt:    #E8C47A;
+  --cielo:     #B8D4C8;
+  --text-dk:   #2E1A0E;
+  --text-md:   #5C3A1E;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #3D5A40 0%, #1E3025 60%, #0D1A10 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px 40px;
+  font-family: 'Lora', Georgia, serif;
+}
+
+/* ── WRAPPER ── */
+.game-wrap {
+  width: 100%;
+  max-width: 900px;
+  background: var(--crema);
+  border-radius: 4px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 6px var(--tierra-dk), 0 0 0 10px #2E1A0E;
+  overflow: hidden;
+}
+
+/* ── TÍTULO ── */
+.game-title {
+  background: var(--tierra-dk);
+  text-align: center;
+  padding: 16px 20px 12px;
+  position: relative;
+  border-bottom: 4px solid var(--oro);
+}
+.game-title h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  color: var(--oro-lt);
+  letter-spacing: 0.04em;
+  text-shadow: 1px 2px 0 #0D1A10;
+}
+.game-title p {
+  font-size: .78rem;
+  color: var(--crema-dk);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════
+   FINCA SCENE (SVG landscape)
+══════════════════════════════ */
+.scene-wrap {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    #6B9E8A 0%, #7EB89A 28%,
+    #5A8C5A 50%, #8B9E6A 72%,
+    #A89258 88%, #C4AA78 100%);
+}
+
+/* sky haze */
+.scene-wrap::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(180,220,200,0.35) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+
+/* SVG fondo: montañas, cafetales, finca */
+.bg-svg {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* suelo texturizado */
+.ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background:
+    repeating-linear-gradient(90deg,
+      #7B5A3A 0, #7B5A3A 2px,
+      #9B7250 2px, #9B7250 18px);
+  border-top: 3px solid #5C3D2E;
+  z-index: 3;
+}
+.ground::before {
+  content:'';
+  position:absolute; top:-8px; left:0; right:0; height:10px;
+  background: linear-gradient(180deg, transparent 0%, rgba(92,61,46,.4) 100%);
+}
+
+/* sendero */
+.path {
+  position: absolute;
+  bottom: 0; left: 5%;
+  width: 85%;
+  height: 52px;
+  background:
+    repeating-linear-gradient(90deg,
+      #BFA07A 0, #BFA07A 3px,
+      #D4B888 3px, #D4B888 22px);
+  clip-path: polygon(0 0, 100% 10%, 100% 100%, 0 100%);
+  z-index: 4;
+  opacity: .7;
+}
+
+/* FINCA destino */
+.finca-dest {
+  position: absolute;
+  right: 28px;
+  bottom: 48px;
+  z-index: 10;
+}
+
+/* NPC campesino */
+.campesino {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  width: 52px;
+  height: 88px;
+  transition: left 0.55s cubic-bezier(0.25, 0.9, 0.35, 1.05);
+  z-index: 20;
+  filter: drop-shadow(2px 5px 4px rgba(0,0,0,0.4));
+}
+
+.campesino svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* pierna animación caminar */
+.leg-l { transform-origin: 26px 62px; animation: legL .55s infinite alternate ease-in-out; }
+.leg-r { transform-origin: 30px 62px; animation: legR .55s infinite alternate-reverse ease-in-out; }
+@keyframes legL { from{transform:rotate(-10deg)} to{transform:rotate(14deg)} }
+@keyframes legR { from{transform:rotate(-10deg)} to{transform:rotate(14deg)} }
+
+.arm-l { transform-origin: 14px 42px; animation: armL .55s infinite alternate ease-in-out; }
+.arm-r { transform-origin: 40px 42px; animation: armR .55s infinite alternate-reverse ease-in-out; }
+@keyframes armL { from{transform:rotate(-8deg)} to{transform:rotate(10deg)} }
+@keyframes armR { from{transform:rotate(-8deg)} to{transform:rotate(10deg)} }
+
+.body-bob { animation: bob 1.1s infinite ease-in-out; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+
+/* ══ PROGRESS ══ */
+.progress-section {
+  background: var(--tierra-dk);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 3px solid var(--oro);
+}
+.progress-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--crema-dk);
+  white-space: nowrap;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.progress-track {
+  flex: 1;
+  height: 14px;
+  background: rgba(0,0,0,.35);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1.5px solid rgba(200,154,78,.3);
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #9B6A30, var(--oro-lt), #E8C47A);
+  border-radius: 99px;
+  transition: width .4s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,200,.5);
+}
+.step-counter {
+  font-size: .75rem;
+  color: var(--oro-lt);
+  white-space: nowrap;
+  font-family: 'Playfair Display', serif;
+}
+
+/* ══ QUIZ PANEL ══ */
+.quiz-panel {
+  padding: 24px 28px 28px;
+  background: var(--crema);
+  position: relative;
+}
+
+/* papel pergamino decorativo */
+.quiz-panel::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 60% 30% at 20% 10%, rgba(200,154,78,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 90%, rgba(107,63,42,.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+.question-box {
+  background: #FFF8EC;
+  border: 1.5px solid var(--crema-dk);
+  border-left: 5px solid var(--oro);
+  border-radius: 2px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(107,63,42,.1), inset 0 0 30px rgba(200,154,78,.04);
+  position: relative;
+}
+.q-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--oro);
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: block;
+}
+.question-text {
+  font-family: 'Lora', serif;
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: var(--text-dk);
+  line-height: 1.55;
+}
+
+/* botones verdadero / falso */
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.btn-option {
+  border: none;
+  padding: 14px 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-option::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(180deg, rgba(255,255,255,.15) 0%, transparent 50%);
+  pointer-events:none;
+}
+.btn-option:active { transform: translateY(3px); box-shadow: none !important; }
+
+.btn-option.true {
+  background: #4A7C59;
+  color: #E8F5EC;
+  box-shadow: 0 5px 0 #2D5038;
+}
+.btn-option.true:hover { background: #5A9068; }
+
+.btn-option.false {
+  background: #8B3A2A;
+  color: #FCE8E4;
+  box-shadow: 0 5px 0 #5C2018;
+}
+.btn-option.false:hover { background: #A04835; }
+
+/* feedback */
+.feedback-bar {
+  background: #EDE3CC;
+  border-left: 4px solid var(--tierra);
+  padding: 11px 16px;
+  font-size: .9rem;
+  color: var(--text-md);
+  font-style: italic;
+  border-radius: 1px;
+  margin-bottom: 16px;
+  min-height: 44px;
+  transition: background .3s, border-color .3s;
+  line-height: 1.4;
+}
+.feedback-bar.ok  { background:#D8EDD8; border-color:#4A7C59; color:#1A3D20; }
+.feedback-bar.err { background:#F2D8D4; border-color:#8B3A2A; color:#4A1008; }
+
+/* botones secundarios */
+.action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sec-btn {
+  padding: 9px 18px;
+  border: 1.5px solid var(--tierra);
+  background: transparent;
+  color: var(--tierra-dk);
+  font-family: 'Lora', serif;
+  font-size: .82rem;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  letter-spacing: .04em;
+}
+.sec-btn:hover { background: var(--tierra-dk); color: var(--crema); }
+.sec-btn:active { transform: scale(.97); }
+
+/* ══ VICTORY OVERLAY ══ */
+.victory-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(14,20,12,.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(3px);
+}
+.victory-card {
+  background: var(--crema);
+  border: 3px solid var(--oro);
+  border-radius: 2px;
+  padding: 36px 40px;
+  text-align: center;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  animation: victoryIn .4s ease-out;
+}
+@keyframes victoryIn {
+  from { transform:translateY(20px) scale(.95); opacity:0; }
+  to   { transform:none; opacity:1; }
+}
+.victory-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  color: var(--cafe);
+  margin-bottom: 10px;
+}
+.victory-card p {
+  font-size: .95rem;
+  color: var(--text-md);
+  margin-bottom: 22px;
+  line-height: 1.5;
+  font-style: italic;
+}
+.victory-card .sec-btn {
+  background: var(--tierra-dk);
+  color: var(--crema);
+  border-color: var(--tierra-dk);
+  padding: 11px 28px;
+  font-size: .9rem;
+}
+
+/* RESPONSIVE */
+@media(max-width:540px){
+  .scene-wrap { height: 220px; }
+  .options { grid-template-columns:1fr; }
+  .quiz-panel { padding: 18px 16px 22px; }
+  .game-title h1 { font-size:1.2rem; }
+  .campesino { width:42px; height:72px; }
+  .progress-section { padding:8px 14px; gap:8px; }
+}
+</style>
+</head>
+<body>
+<div class="game-wrap" id="gameApp">
+
+  <!-- TÍTULO -->
+  <div class="game-title">
+    <h1>☕ El Campesino Cafetero</h1>
+    <p>Juego didáctico sobre la caficultura colombiana</p>
+  </div>
+
+  <!-- ESCENA FINCA -->
+  <div class="scene-wrap">
+
+    <!-- SVG paisaje fondo -->
+    <svg class="bg-svg" viewBox="0 0 900 280" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+      <!-- cielo gradiente -->
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7ABFAA"/>
+          <stop offset="100%" stop-color="#A8C8A0"/>
+        </linearGradient>
+        <linearGradient id="mtnGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3D6645"/>
+          <stop offset="100%" stop-color="#5A8050"/>
+        </linearGradient>
+        <linearGradient id="mtn2Grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4E7A58"/>
+          <stop offset="100%" stop-color="#6A9468"/>
+        </linearGradient>
+        <radialGradient id="sunGlare" cx="75%" cy="15%" r="20%">
+          <stop offset="0%" stop-color="rgba(255,240,180,0.35)"/>
+          <stop offset="100%" stop-color="rgba(255,240,180,0)"/>
+        </radialGradient>
+        <filter id="leafBlur"><feGaussianBlur stdDeviation=".8"/></filter>
+      </defs>
+
+      <!-- sol suave -->
+      <circle cx="680" cy="38" r="28" fill="rgba(255,240,160,0.35)"/>
+      <circle cx="680" cy="38" r="18" fill="rgba(255,235,130,0.55)"/>
+      <ellipse cx="500" cy="0" rx="500" ry="120" fill="url(#sunGlare)"/>
+
+      <!-- nubes -->
+      <ellipse cx="130" cy="34" rx="60" ry="18" fill="rgba(255,255,255,0.38)"/>
+      <ellipse cx="160" cy="26" rx="42" ry="14" fill="rgba(255,255,255,0.3)"/>
+      <ellipse cx="400" cy="48" rx="50" ry="14" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="430" cy="40" rx="32" ry="11" fill="rgba(255,255,255,0.22)"/>
+
+      <!-- montañas traseras -->
+      <polygon points="0,200 160,50 320,200" fill="#3D6645" opacity=".9"/>
+      <polygon points="100,200 280,30 460,200" fill="url(#mtnGrad)" opacity=".95"/>
+      <polygon points="400,200 580,45 760,200" fill="url(#mtn2Grad)" opacity=".9"/>
+      <polygon points="680,200 840,60 1000,200" fill="#3D6645" opacity=".85"/>
+      <!-- bruma montañas -->
+      <rect x="0" y="120" width="900" height="40" fill="rgba(180,220,200,0.18)"/>
+
+      <!-- colinas verdes intermedias -->
+      <ellipse cx="200" cy="200" rx="250" ry="60" fill="#52844A"/>
+      <ellipse cx="700" cy="195" rx="230" ry="55" fill="#4E7A45"/>
+
+      <!-- ARBUSTOS DE CAFÉ – primer plano -->
+      <!-- Cada cafeto: tronco + copa densa -->
+      <!-- cafeto 1 -->
+      <g transform="translate(55,155)">
+        <rect x="10" y="38" width="6" height="22" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="13" cy="33" rx="18" ry="15" fill="#2D5C30" filter="url(#leafBlur)"/>
+        <ellipse cx="6"  cy="30" rx="11" ry="12" fill="#3A7040"/>
+        <ellipse cx="20" cy="32" rx="12" ry="10" fill="#346838"/>
+        <ellipse cx="13" cy="22" rx="9"  ry="9"  fill="#4A8848"/>
+        <!-- cerezas -->
+        <circle cx="5"  cy="28" r="3" fill="#C0392B"/><circle cx="5"  cy="28" r="1.2" fill="#E74C3C"/>
+        <circle cx="20" cy="30" r="3" fill="#C0392B"/><circle cx="20" cy="30" r="1.2" fill="#E74C3C"/>
+        <circle cx="13" cy="18" r="2.5" fill="#E74C3C"/>
+        <circle cx="8"  cy="25" r="2.5" fill="#A93226"/>
+      </g>
+      <!-- cafeto 2 -->
+      <g transform="translate(120,145)">
+        <rect x="9" y="36" width="6" height="24" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="12" cy="31" rx="20" ry="16" fill="#315E34"/>
+        <ellipse cx="5"  cy="28" rx="12" ry="13" fill="#3D7242"/>
+        <ellipse cx="19" cy="29" rx="14" ry="11" fill="#2E6032"/>
+        <ellipse cx="12" cy="18" rx="11" ry="10" fill="#4A8848"/>
+        <circle cx="18" cy="26" r="3.2" fill="#C0392B"/><circle cx="18" cy="26" r="1.3" fill="#E74C3C"/>
+        <circle cx="5"  cy="25" r="2.8" fill="#A93226"/>
+        <circle cx="12" cy="15" r="2.5" fill="#E74C3C"/>
+        <circle cx="22" cy="33" r="2.5" fill="#C0392B"/>
+      </g>
+      <!-- cafeto 3 -->
+      <g transform="translate(190,150)">
+        <rect x="10" y="35" width="6" height="23" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="13" cy="30" rx="17" ry="15" fill="#2D5C30"/>
+        <ellipse cx="6"  cy="27" rx="11" ry="12" fill="#3A7040"/>
+        <ellipse cx="20" cy="28" rx="12" ry="10" fill="#346838"/>
+        <ellipse cx="13" cy="18" rx="9"  ry="9"  fill="#4A8848"/>
+        <circle cx="7"  cy="24" r="3"   fill="#C0392B"/><circle cx="7"  cy="24" r="1.2" fill="#E74C3C"/>
+        <circle cx="19" cy="26" r="3"   fill="#A93226"/>
+        <circle cx="13" cy="15" r="2.5" fill="#E74C3C"/>
+      </g>
+      <!-- cafeto 4 (derecha) -->
+      <g transform="translate(620,148)">
+        <rect x="9" y="36" width="6" height="24" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="12" cy="31" rx="19" ry="16" fill="#315E34"/>
+        <ellipse cx="5"  cy="28" rx="12" ry="13" fill="#3D7242"/>
+        <ellipse cx="19" cy="29" rx="14" ry="11" fill="#2E6032"/>
+        <ellipse cx="12" cy="18" rx="11" ry="10" fill="#4A8848"/>
+        <circle cx="17" cy="26" r="3.2" fill="#C0392B"/><circle cx="17" cy="26" r="1.3" fill="#E74C3C"/>
+        <circle cx="5"  cy="25" r="2.8" fill="#A93226"/>
+        <circle cx="11" cy="15" r="2.5" fill="#E74C3C"/>
+      </g>
+      <!-- cafeto 5 -->
+      <g transform="translate(690,155)">
+        <rect x="10" y="38" width="6" height="20" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="13" cy="33" rx="18" ry="14" fill="#2D5C30"/>
+        <ellipse cx="6"  cy="30" rx="11" ry="12" fill="#3A7040"/>
+        <ellipse cx="20" cy="31" rx="12" ry="10" fill="#346838"/>
+        <ellipse cx="13" cy="22" rx="9"  ry="8"  fill="#4A8848"/>
+        <circle cx="5"  cy="28" r="3"   fill="#C0392B"/><circle cx="5"  cy="28" r="1.2" fill="#E74C3C"/>
+        <circle cx="20" cy="29" r="3"   fill="#A93226"/>
+        <circle cx="13" cy="19" r="2.5" fill="#E74C3C"/>
+      </g>
+
+      <!-- FINCA (casa campesina colombiana) -->
+      <g transform="translate(760,80)">
+        <!-- sombra -->
+        <ellipse cx="65" cy="170" rx="62" ry="10" fill="rgba(0,0,0,0.2)"/>
+        <!-- paredes -->
+        <rect x="8" y="80" width="115" height="90" rx="3" fill="#E8D5A0"/>
+        <rect x="8" y="80" width="115" height="90" rx="3" fill="none" stroke="#B8941C" stroke-width="2"/>
+        <!-- franjas blancas (bahareque estilo) -->
+        <line x1="8" y1="100" x2="123" y2="100" stroke="#D4BE78" stroke-width="1.5"/>
+        <line x1="8" y1="120" x2="123" y2="120" stroke="#D4BE78" stroke-width="1.5"/>
+        <line x1="8" y1="140" x2="123" y2="140" stroke="#D4BE78" stroke-width="1.5"/>
+        <line x1="35" y1="80" x2="35" y2="170" stroke="#D4BE78" stroke-width="1.5"/>
+        <line x1="95" y1="80" x2="95" y2="170" stroke="#D4BE78" stroke-width="1.5"/>
+        <!-- techo -->
+        <polygon points="-5,82 65,18 135,82" fill="#8B3A2A"/>
+        <polygon points="-5,82 65,18 135,82" fill="none" stroke="#6B2A1A" stroke-width="2"/>
+        <!-- tejas detalle -->
+        <line x1="0" y1="65" x2="130" y2="65" stroke="#6B2A1A" stroke-width="1.5" opacity=".6"/>
+        <line x1="10" y1="50" x2="120" y2="50" stroke="#6B2A1A" stroke-width="1.5" opacity=".6"/>
+        <line x1="22" y1="35" x2="108" y2="35" stroke="#6B2A1A" stroke-width="1" opacity=".5"/>
+        <!-- puerta -->
+        <rect x="50" y="120" width="32" height="50" rx="2" fill="#7B5030"/>
+        <rect x="50" y="120" width="32" height="50" rx="2" fill="none" stroke="#5C3820" stroke-width="1.5"/>
+        <circle cx="78" cy="145" r="2.5" fill="#C8982A"/>
+        <!-- ventana izquierda -->
+        <rect x="14" y="90" width="22" height="18" rx="1" fill="#A8D4D8" stroke="#8B6030" stroke-width="1.5"/>
+        <line x1="25" y1="90" x2="25" y2="108" stroke="#7A5020" stroke-width="1"/>
+        <line x1="14" y1="99" x2="36" y2="99" stroke="#7A5020" stroke-width="1"/>
+        <!-- ventana derecha -->
+        <rect x="95" y="90" width="22" height="18" rx="1" fill="#A8D4D8" stroke="#8B6030" stroke-width="1.5"/>
+        <line x1="106" y1="90" x2="106" y2="108" stroke="#7A5020" stroke-width="1"/>
+        <line x1="95"  y1="99" x2="117" y2="99" stroke="#7A5020" stroke-width="1"/>
+        <!-- cartel -->
+        <rect x="30" y="62" width="72" height="16" rx="8" fill="#2D5C30" stroke="#C8A82A" stroke-width="1.5"/>
+        <text x="66" y="74" text-anchor="middle" font-size="8" font-family="serif" font-weight="bold" fill="#E8D890">☕ BETANIA</text>
+        <!-- árbol lateral -->
+        <rect x="130" y="120" width="6" height="50" rx="2" fill="#5C3D2E"/>
+        <ellipse cx="133" cy="108" rx="22" ry="20" fill="#2D5C30"/>
+        <ellipse cx="125" cy="115" rx="14" ry="14" fill="#3A7040"/>
+        <ellipse cx="142" cy="112" rx="13" ry="12" fill="#346838"/>
+      </g>
+    </svg>
+
+    <!-- suelo y sendero -->
+    <div class="ground"></div>
+    <div class="path"></div>
+
+    <!-- CAMPESINO SVG NPC -->
+    <div class="campesino" id="campesino">
+      <svg viewBox="0 0 52 88" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+        <g class="body-bob">
+          <!-- PIERNAS -->
+          <g class="leg-l">
+            <rect x="17" y="60" width="10" height="22" rx="4" fill="#3D2B1A"/>
+            <!-- bota -->
+            <rect x="15" y="78" width="13" height="6" rx="3" fill="#2A1A0A"/>
+          </g>
+          <g class="leg-r">
+            <rect x="28" y="60" width="10" height="22" rx="4" fill="#3D2B1A"/>
+            <rect x="27" y="78" width="13" height="6" rx="3" fill="#2A1A0A"/>
+          </g>
+
+          <!-- CUERPO (camisa campesina – cuadros) -->
+          <rect x="12" y="36" width="30" height="28" rx="6" fill="#5C7A3A"/>
+          <!-- cuadros ruana/camisa -->
+          <line x1="12" y1="44" x2="42" y2="44" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+          <line x1="12" y1="52" x2="42" y2="52" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+          <line x1="12" y1="60" x2="42" y2="60" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+          <line x1="22" y1="36" x2="22" y2="64" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+          <line x1="32" y1="36" x2="32" y2="64" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+          <!-- botones camisa -->
+          <circle cx="27" cy="43" r="1.5" fill="rgba(255,255,200,.6)"/>
+          <circle cx="27" cy="50" r="1.5" fill="rgba(255,255,200,.6)"/>
+          <!-- bolsillo -->
+          <rect x="13" y="40" width="9" height="8" rx="2" fill="rgba(0,0,0,.12)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+          <!-- cinturón -->
+          <rect x="12" y="60" width="30" height="5" rx="2" fill="#4A2E18"/>
+          <rect x="24" y="60" width="7" height="5" rx="1" fill="#8B6030"/>
+
+          <!-- BRAZOS -->
+          <g class="arm-l">
+            <!-- brazo izquierdo -->
+            <rect x="4"  y="38" width="10" height="20" rx="5" fill="#5C7A3A"/>
+            <!-- mano -->
+            <ellipse cx="9" cy="59" rx="5" ry="5" fill="#D4956A"/>
+            <!-- lleva un costal de café -->
+            <rect x="-2" y="52" width="12" height="14" rx="3" fill="#A08040"/>
+            <ellipse cx="4" cy="52" rx="6" ry="3" fill="#B89850"/>
+            <text x="4" y="62" text-anchor="middle" font-size="6" fill="#5C3820">☕</text>
+          </g>
+          <g class="arm-r">
+            <!-- brazo derecho -->
+            <rect x="40" y="38" width="10" height="20" rx="5" fill="#5C7A3A"/>
+            <ellipse cx="45" cy="59" rx="5" ry="5" fill="#D4956A"/>
+          </g>
+
+          <!-- CUELLO -->
+          <rect x="22" y="30" width="10" height="10" rx="4" fill="#D4956A"/>
+
+          <!-- CABEZA -->
+          <ellipse cx="27" cy="22" rx="16" ry="16" fill="#E8A870"/>
+          <!-- sombra cara -->
+          <ellipse cx="27" cy="26" rx="12" ry="10" fill="rgba(180,90,40,.1)"/>
+          <!-- orejas -->
+          <ellipse cx="11" cy="22" rx="4" ry="5" fill="#D49060"/>
+          <ellipse cx="43" cy="22" rx="4" ry="5" fill="#D49060"/>
+
+          <!-- rasgos faciales -->
+          <!-- cejas -->
+          <path d="M18 15 Q21 13 24 15" stroke="#5C3820" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M30 15 Q33 13 36 15" stroke="#5C3820" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <!-- ojos -->
+          <ellipse cx="21" cy="19" rx="3" ry="3.2" fill="#2C1A0A"/>
+          <ellipse cx="33" cy="19" rx="3" ry="3.2" fill="#2C1A0A"/>
+          <!-- brillo ojo -->
+          <circle cx="22.5" cy="18" r="1" fill="white" opacity=".7"/>
+          <circle cx="34.5" cy="18" r="1" fill="white" opacity=".7"/>
+          <!-- nariz -->
+          <ellipse cx="27" cy="24" rx="3.5" ry="2.5" fill="#C87840" opacity=".6"/>
+          <!-- bigote campesino -->
+          <path d="M20 27 Q24 30 27 28 Q30 30 34 27" stroke="#5C3820" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <!-- sonrisa -->
+          <path d="M22 31 Q27 35 32 31" stroke="#8B4A2A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+          <!-- SOMBRERO AGUADEÑO -->
+          <!-- ala -->
+          <ellipse cx="27" cy="8" rx="22" ry="5" fill="#D4A840"/>
+          <ellipse cx="27" cy="8" rx="22" ry="5" fill="none" stroke="#B88C2A" stroke-width="1"/>
+          <!-- copa -->
+          <path d="M13,8 Q13,-4 27,-6 Q41,-4 41,8" fill="#E8C050"/>
+          <path d="M13,8 Q13,-4 27,-6 Q41,-4 41,8" fill="none" stroke="#B88C2A" stroke-width="1.5"/>
+          <!-- cinta sombrero -->
+          <path d="M13,7 Q27,10 41,7" stroke="#4A2E18" stroke-width="3" fill="none"/>
+          <!-- ribete sombrero -->
+          <ellipse cx="27" cy="8" rx="14" ry="3.5" fill="none" stroke="#C8A030" stroke-width="1" opacity=".6"/>
+        </g>
+      </svg>
+    </div>
+
+  </div><!-- /scene-wrap -->
+
+  <!-- BARRA DE PROGRESO -->
+  <div class="progress-section">
+    <span class="progress-label">🚶 Camino a la finca</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span class="step-counter" id="stepCounter">0 / 10</span>
+  </div>
+
+  <!-- PANEL QUIZ -->
+  <div class="quiz-panel">
+    <div class="question-box">
+      <span class="q-label">☕ Pregunta caficultura</span>
+      <div class="question-text" id="questionDisplay">Cargando pregunta...</div>
+    </div>
+
+    <div class="options">
+      <button class="btn-option true"  data-value="true">✔ Verdadero</button>
+      <button class="btn-option false" data-value="false">✘ Falso</button>
+    </div>
+
+    <div class="feedback-bar" id="feedbackMsg">
+      Responde correctamente para que el campesino avance hacia la finca 🌿
+    </div>
+
+    <div class="action-row">
+      <button class="sec-btn" id="resetGameBtn">🌱 Reiniciar juego</button>
+      <button class="sec-btn" id="undoLastBtn">↩ Deshacer último paso</button>
+    </div>
+  </div>
+
+</div><!-- /game-wrap -->
+
+<script>
+const QUESTIONS = [
+  { text: "El análisis de suelo permite conocer el pH y los nutrientes disponibles para el cultivo.", isTrue: true },
+  { text: "Los suelos cafetaleros siempre mantienen los mismos nutrientes con el paso del tiempo.", isTrue: false },
+  { text: "Realizar análisis de suelo cada dos años ayuda a tomar mejores decisiones de fertilización.", isTrue: true },
+  { text: "La quema del suelo mejora la vida de lombrices y microorganismos en el terreno.", isTrue: false },
+  { text: "El diagnóstico del suelo ayuda a identificar si hay deficiencia de nitrógeno, fósforo o potasio.", isTrue: true },
+  { text: "Los suelos de origen volcánico no requieren ningún tipo de manejo o mantenimiento.", isTrue: false },
+  { text: "Las barreras vivas ayudan a reducir la pérdida de suelo causada por la lluvia.", isTrue: true },
+  { text: "Mantener el suelo totalmente descubierto evita problemas de erosión.", isTrue: false },
+  { text: "Las coberturas vegetales ayudan a conservar la humedad del suelo.", isTrue: true },
+  { text: "El pH del suelo no tiene relación con el desarrollo de la planta de café.", isTrue: false },
+  { text: "El análisis de suelo se compara a veces con un examen de salud para la tierra.", isTrue: true },
+  { text: "La erosión ocurre cuando el suelo es arrastrado por el agua o el viento.", isTrue: true },
+  { text: "Preparar el suelo correctamente no influye en la productividad del cultivo.", isTrue: false },
+  { text: "La materia orgánica contribuye a mejorar la estructura del suelo.", isTrue: true },
+  { text: "Un suelo bien manejado puede ayudar a reducir el uso de fertilizantes.", isTrue: true }
+];
+
+const TOTAL_STEPS = 10;
+let currentStep = 0;
+let historyStack = [];
+let gameActive = true;
+let currentQuestionIndex = 0;
+
+const campesinoEl   = document.getElementById('campesino');
+const progressFill  = document.getElementById('progressFill');
+const stepCounter   = document.getElementById('stepCounter');
+const questionEl    = document.getElementById('questionDisplay');
+const feedbackEl    = document.getElementById('feedbackMsg');
+const resetBtn      = document.getElementById('resetGameBtn');
+const undoBtn       = document.getElementById('undoLastBtn');
+const trueBtn       = document.querySelector('.btn-option.true');
+const falseBtn      = document.querySelector('.btn-option.false');
+
+function updateUI() {
+  if (!gameActive) return;
+  const pct = (currentStep / TOTAL_STEPS) * 100;
+  const maxLeft = 82;
+  const left = Math.min(maxLeft, Math.max(0, (pct / 100) * maxLeft));
+  campesinoEl.style.left = `calc(${left}% - 26px)`;
+  progressFill.style.width = `${pct}%`;
+  stepCounter.textContent = `${currentStep} / ${TOTAL_STEPS}`;
+  if (currentStep >= TOTAL_STEPS && gameActive) {
+    gameActive = false;
+    setTimeout(showVictory, 500);
+  }
+}
+
+function pushHistory() {
+  historyStack.push(currentStep);
+  if (historyStack.length > 20) historyStack.shift();
+}
+
+function pickQuestion() {
+  currentQuestionIndex = Math.floor(Math.random() * QUESTIONS.length);
+  questionEl.textContent = QUESTIONS[currentQuestionIndex].text;
+}
+
+function moveCampesino(delta) {
+  if (!gameActive) return false;
+  const next = Math.max(0, Math.min(TOTAL_STEPS, currentStep + delta));
+  if (next === currentStep) {
+    if (currentStep === 0 && delta < 0)
+      setFeedback("🌄 Ya estás al inicio del sendero.", '');
+    return false;
+  }
+  pushHistory();
+  currentStep = next;
+  updateUI();
+  return true;
+}
+
+function answerQuestion(selected) {
+  if (!gameActive) {
+    setFeedback("🏁 Juego terminado. Reinicia para continuar.", '');
+    return;
+  }
+  const correct = selected === QUESTIONS[currentQuestionIndex].isTrue;
+  moveCampesino(correct ? 1 : -1);
+  if (correct) {
+    setFeedback("✔ ¡Correcto! El campesino avanza un paso. 🚶", 'ok');
+  } else {
+    setFeedback("✘ Incorrecto. El campesino retrocede un paso. Sigue aprendiendo.", 'err');
+  }
+  setTimeout(() => { if (gameActive) clearFeedbackStyle(); }, 900);
+  pickQuestion();
+}
+
+function setFeedback(msg, cls) {
+  feedbackEl.textContent = msg;
+  feedbackEl.className = 'feedback-bar' + (cls ? ' ' + cls : '');
+}
+function clearFeedbackStyle() {
+  feedbackEl.className = 'feedback-bar';
+}
+
+function undoLastMove() {
+  if (!gameActive) { setFeedback("🏆 Juego terminado. Reinicia para seguir.", ''); return; }
+  if (!historyStack.length) { setFeedback("⏳ No hay movimientos para deshacer.", ''); return; }
+  currentStep = historyStack.pop();
+  updateUI();
+  pickQuestion();
+  setFeedback("↩ Movimiento deshecho. Nueva pregunta generada.", '');
+}
+
+function resetGame() {
+  document.querySelector('.victory-overlay')?.remove();
+  gameActive = true;
+  currentStep = 0;
+  historyStack = [];
+  campesinoEl.style.left = 'calc(0% - 26px)';
+  progressFill.style.width = '0%';
+  stepCounter.textContent = '0 / 10';
+  pickQuestion();
+  setFeedback("🌱 Juego reiniciado. Responde para que el campesino llegue a la finca.", '');
+}
+
+function showVictory() {
+  if (document.querySelector('.victory-overlay')) return;
+  const ov = document.createElement('div');
+  ov.className = 'victory-overlay';
+  ov.innerHTML = `
+    <div class="victory-card">
+      <h2>🏆 ¡Felicitaciones!</h2>
+      <p>El campesino llegó a la Finca BETANIA.<br>Demostraste conocer la caficultura colombiana. ☕</p>
+      <button class="sec-btn" id="vicRestart">🌾 Jugar de nuevo</button>
+    </div>`;
+  document.getElementById('gameApp').appendChild(ov);
+  document.getElementById('vicRestart').addEventListener('click', resetGame);
+}
+
+trueBtn.addEventListener('click',  () => answerQuestion(true));
+falseBtn.addEventListener('click', () => answerQuestion(false));
+resetBtn.addEventListener('click', resetGame);
+undoBtn.addEventListener('click',  undoLastMove);
+window.addEventListener('resize',  updateUI);
+
+resetGame();
+</script>
+</body>
+</html>
